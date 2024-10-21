@@ -1,6 +1,3 @@
-Here's the `README.md` content in markdown format:
-
-```markdown
 # 📋 Clipboard History Manager for macOS
 
 **Clipboard History Manager** is a lightweight, intuitive Electron-based application that brings powerful clipboard management to macOS. Just like Windows, it lets you keep track of everything you've copied, allowing you to paste from a list of recent clipboard entries seamlessly. With a simple shortcut, you can access your clipboard history and enhance your productivity by never losing a copied text snippet again!
@@ -96,6 +93,3 @@ We'd love to hear your thoughts! Open an issue or drop a suggestion on our GitHu
 ---
 
 Enjoy effortless clipboard management with **Clipboard History Manager**! 😃
-```
-
-Feel free to adjust or add any more sections as needed!

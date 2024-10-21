@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="bg-slate-100/30" style="background:transparent">
+  <head>
+    <title>Clipboard Manager</title>
+  </head>
+  <link href="./output.css" rel="stylesheet" />
+  <link href="./staticStyle.css" rel="stylesheet" />
+  <body class="bg-slate-700/30">
+    <div
+      class="flex gap-1 items-end fixed top-0 p-2 w-full bg-blue-600 z-20 draggable"
+    >
+      <svg
+        class="w-6 h-6 text-white/70"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        width="32"
+        height="32"
+        fill="currentColor"
+        viewBox="0 0 32 32"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M8 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1h2a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 1 1 2-2h2Zm6 1h-4v2H9a1 1 0 0 0 0 2h6a1 1 0 1 0 0-2h-1V4Zm-6 8a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H9a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9Z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <h1 class="flex gap-1 text-lg text-white/70 font-bold">
+        Clipboard History Manager
+      </h1>
+    </div>
+
+    <div
+      id="clipboard-history"
+      class="flex flex-col justify-center items-center gap-3 rounded-2xl p-5 pt-10 mt-12 overflow-auto "
+    >
+      <!-- <div class="flex w-full h-full justify-center items-center"><h1 class="text-lg font-semibold">No History Available Yet!</h1></div> -->
+    </div>
+
+   
+
+    <script>
+      const { ipcRenderer, remote } = require("electron");
+
+      let pinnedItems =
+        JSON.parse(localStorage.getItem("pinnedClipboardItems")) || [];
+
+      ipcRenderer.on("show-clipboard-history", (event, clipboardHistory) => {
+        const historyContainer = document.getElementById("clipboard-history");
+
+        const allItems = [...new Set([...pinnedItems, ...clipboardHistory])];
+        historyContainer.innerHTML = ''; // Clear the container first
+
+        if (allItems.length) {
+          allItems.forEach((item, index) => {
+            const container = document.createElement("div");
+            container.className = "history-item-container flex gap-2 items-center justify-between rounded-2xl p-2 bg-blue-600/10  text-white p-5 rounded-lg font-mono text-xs w-full active:font-bold focus:animate-ping hover:ring ring-offset-2 ring-offset-transparent relative group";
+
+            const historyItem = document.createElement("div");
+            historyItem.className = "history-item text-wrap overflow-hidden";
+            historyItem.setAttribute("data-index", index);
+            historyItem.textContent = item; // Safely set text content
+
+            const pinButton = document.createElement("button");
+            pinButton.className = "pin-button hidden  absolute right-2 top-2 text-blue-400 text-md  bg-base-100/70  hover:bg-gray-200 p-1 rounded";
+            pinButton.innerHTML = `
+              <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14.579 14.579L11.6316 17.5264L10.7683 16.6631C10.3775 16.2723 10.1579 15.7422 10.1579 15.1894V13.1053L7.21052 10.158L5 9.42111L9.42111 5L10.158 7.21052L13.1053 10.1579L15.1894 10.1579C15.7422 10.1579 16.2722 10.3775 16.6631 10.7683L17.5264 11.6316L14.579 14.579ZM14.579 14.579L19 19" stroke="#464455" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>`;
+
+            const unpinButton = document.createElement("button");
+            unpinButton.className = "unpin-button hidden  absolute right-2 top-2 text-md bg-gray-200/50 hover:bg-red-200 p-1 rounded";
+            unpinButton.innerHTML = `
+                <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14.579 14.579L11.6316 17.5264L11.0526 16.9474M14.579 14.579L17.5264 11.6316L16.9474 11.0526M14.579 14.579L19 19M5 19L10.1579 13.8421M19 5L13.8421 10.1579M13.8421 10.1579L13.1053 10.1579L10.158 7.21052L9.42111 5L5 9.42111L7.21052 10.158L10.1579 13.1053V13.8421M13.8421 10.1579L10.1579 13.8421" stroke="#464455" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`;
+
+            // Show the unpin button only if the item is pinned
+            if (pinnedItems.includes(item)) {
+              unpinButton.classList.remove("hidden");
+            } else {
+              pinButton.classList.remove("hidden");
+            }
+
+            const msgCopied = document.createElement("span");
+            msgCopied.className = "msg-copied absolute right-2 bottom-2 text-xs";
+
+            container.appendChild(historyItem);
+            container.appendChild(pinButton);
+            container.appendChild(unpinButton);
+            container.appendChild(msgCopied);
+            historyContainer.appendChild(container);
+          });
+        } else {
+          historyContainer.innerHTML = `<div class="flex w-full h-full justify-center items-center"><h1 class="text-lg font-semibold">No History Available Yet!</h1></div>`;
+        }
+      });
+
+      document
+        .getElementById("clipboard-history")
+        .addEventListener("click", (event) => {
+          const isPinButton = event.target.closest(".pin-button");
+          const isUnpinButton = event.target.closest(".unpin-button");
+          const isContainer = event.target.closest(".history-item-container");
+
+          // Handle pin button click
+          if (isPinButton) {
+            const selectedItem = isPinButton.parentNode.querySelector(".history-item").textContent.trim();
+            pinToLocalStorage(selectedItem);
+            return; // Exit to prevent copying the pinned item
+          }
+
+          // Handle unpin button click
+          if (isUnpinButton) {
+            const selectedItem = isUnpinButton.parentNode.querySelector(".history-item").textContent.trim();
+            unpinFromLocalStorage(selectedItem);
+            return; // Exit to prevent copying the unpinned item
+          }
+
+          // Handle click on the history-item-container
+          if (isContainer) {
+            const selectedText = isContainer.querySelector(".history-item").textContent.trim();
+            navigator.clipboard.writeText(selectedText); // Copy to clipboard
+            const msgCopied = isContainer.querySelector(".msg-copied");
+            msgCopied.innerHTML = "Copied!";
+            setTimeout(() => {
+              msgCopied.innerHTML = "";
+            }, 2000); // Hide after 2 seconds
+          }
+        });
+
+      function pinToLocalStorage(item) {
+        let pinnedItems =
+          JSON.parse(localStorage.getItem("pinnedClipboardItems")) || [];
+
+        if (!pinnedItems.includes(item)) {
+          pinnedItems.push(item);
+          localStorage.setItem(
+            "pinnedClipboardItems",
+            JSON.stringify(pinnedItems)
+          );
+
+          ipcRenderer.send("refresh-clipboard-history");
+        }
+      }
+
+      function unpinFromLocalStorage(item) {
+        let pinnedItems =
+          JSON.parse(localStorage.getItem("pinnedClipboardItems")) || [];
+
+        pinnedItems = pinnedItems.filter((pinnedItem) => pinnedItem !== item);
+        localStorage.setItem(
+          "pinnedClipboardItems",
+          JSON.stringify(pinnedItems)
+        );
+
+        // Refresh the display after unpinning
+        ipcRenderer.send("refresh-clipboard-history");
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+.draggable {
+    -webkit-app-region: drag;
+    cursor: move;
+    user-select: none;
+}
+
